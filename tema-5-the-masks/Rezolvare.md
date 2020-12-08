@@ -77,9 +77,61 @@ IP (tos 0x0, ttl 64, id 38277, offset 0, flags [DF], proto TCP (6), length 190)
 
 ## 2. TCP Hijacking (5%)
 
-Scrieție mesajele primite de server, client și printați acțiunile pe care le face middle.
+
+Am creat script-ul `middle.py` care primeste pachetele de tip TCP de la router, le modifica si le trimite catre server, ca si cum ar fi router-ul.
+In tot acest timp, script-ul `src/arp_spoof.py` ramane pornit.
+
+Pe container-ul `middle` pornim scipt-ul `middle.py`:
+```
+$ docker-compose exec middle python3 /elocal/src/middle.py
+
+.
+Sent 1 packets.
+.
+Sent 1 packets.
+.
+Sent 1 packets.
+.
+...
+```
+
+Pe container-ul `client` pornim script-ul `tcp_client.py`:
+```
+$ docker-compose exec client python3 /elocal/src/tcp_client.py
+
+[LINE:17]# INFO     [2020-06-29 19:37:58,309]  Handshake cu ('198.7.0.2', 10000)
+[LINE:22]# INFO     [2020-06-29 19:38:01,328]  Content primit: "b'Server a primit mesajul: :)'"
+[LINE:25]# INFO     [2020-06-29 19:38:01,328]  closing socket
+```
+
+Pe container-ul `server` pornim script-ul `tcp_server.py`:
+```
+$ docker-compose exec server python3 /elocal/src/tcp_server.py
+
+[LINE:14]# INFO     [2020-06-29 19:37:49,016]  Serverul a pornit pe 198.7.0.2 si portnul portul 10000
+[LINE:17]# INFO     [2020-06-29 19:37:49,017]  Asteptam conexiui...
+[LINE:19]# INFO     [2020-06-29 19:37:58,310]  Handshake cu ('198.7.0.3', 49468)
+[LINE:22]# INFO     [2020-06-29 19:38:01,327]  Content primit: "b':)'"
+[LINE:17]# INFO     [2020-06-29 19:38:01,328]  Asteptam conexiui...
+```
 
 
+Daca rulam `tcpdump` pe server, putem vedea ca el crede ca primeste pachetul de la router:
 ```
-docker-compose logs
-```
+$ docker-compose exec server tcpdump -SntvXX -i any
+
+tcpdump: listening on any, link-type LINUX_SLL (Linux cooked v1), capture size 262144 bytes
+ARP, Ethernet (len 6), IPv4 (len 4), Reply 198.7.0.1 is-at 02:42:c6:07:00:03, length 28
+        0x0000:  0000 0001 0006 0242 c607 0003 0000 0806  .......B........
+        0x0010:  0001 0800 0604 0002 0242 c607 0003 c607  .........B......
+        0x0020:  0001 0242 c607 0002 c607 0002            ...B........
+ARP, Ethernet (len 6), IPv4 (len 4), Reply 198.7.0.1 is-at 02:42:c6:07:00:03, length 28
+        0x0000:  0000 0001 0006 0242 c607 0003 0000 0806  .......B........
+        0x0010:  0001 0800 0604 0002 0242 c607 0003 c607  .........B......
+        0x0020:  0001 0242 c607 0002 c607 0002            ...B........
+ARP, Ethernet (len 6), IPv4 (len 4), Reply 198.7.0.1 is-at 02:42:c6:07:00:03, length 28
+        0x0000:  0000 0001 0006 0242 c607 0003 0000 0806  .......B........
+        0x0010:  0001 0800 0604 0002 0242 c607 0003 c607  .........B......
+        0x0020:  0001 0242 c607 0002 c607 0002            ...B........
+        ...
+        ```
