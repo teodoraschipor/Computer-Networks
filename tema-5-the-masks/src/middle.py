@@ -11,4 +11,3 @@ def function(pkt):
 
 pkts = sniff(iface='eth0', filter="tcp and host 198.7.0.1", prn=function) # primeste pachetele de tip tcp de la router; function -- le modifica si le trimite catre server ca si cum ar fi clientul
 
-

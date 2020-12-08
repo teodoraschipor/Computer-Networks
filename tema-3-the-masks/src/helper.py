@@ -23,16 +23,17 @@ def compara_endianness(numar):
     print ("Little Endian: ", [bin(byte) for byte in struct.pack('<H', numar)])
 
 
-def create_header_emitator(seq_nr, checksum, flags = 'S'):
+def create_header_emitator(seq_nr, checksum, flags='S'):
 
-    spf = 0
+    var = 0
+
     if flags == 'S':
-        spf = spf | 0b100
+        var = var | 0b100
     elif flags == 'F':
-        spf = spf | 0b001
+        var = var | 0b001
     elif flags == 'P':
-        spf = spf | 0b010
-    octeti = struct.pack('!LHH', seq_nr, checksum, spf)
+        var = var | 0b010
+    octeti = struct.pack('!LHH', seq_nr, checksum, var)
     return octeti
 
 
@@ -61,7 +62,7 @@ def create_header_receptor(ack_nr, checksum, window):
 def parse_header_receptor(octeti):
 
     ack_nr, checksum, window = struct.unpack('!LHH', octeti)
-    return ack_nr, checksum, window
+    return (ack_nr, checksum, window)
 
 
 def citeste_segment(file_descriptor):
@@ -81,29 +82,42 @@ def calculeaza_checksum(octeti):
 
     checksum = 0
     # daca lungimea len(octeti) este impară, se mai adaugă un octet de 0 la sfârșit
-    bytes = bytearray(octeti)
     if len(octeti) % 2 == 1:
-        bytes.append(0)
-    n = len(bytes)
+        octeti.ljust(len(octeti) + 8, '0')
+
+    max_biti = 16
+    max_nr = (1 << max_biti) - 1
+    n = len(octeti)
+    numbers = []
     # 1. convertim sirul octeti in numere pe 16 biti:
     for i in range(0, n, 2):
-        number = int(struct.unpack('!H', bytes[i:i+2])[0])  # cate un numar de 16 biti
-        # 2. adunam numerele in complementul lui 1, ce depaseste 16 biti se aduna la coada:
-        checksum = (checksum + number) % 65535
+        number = int(struct.unpack('!H', octeti[i:i+2])[0]) # cate un numar de 16 biti
+        numbers.append(number)
+    #print(numbers)
+
+    # 2. adunam numerele in complementul lui 1, ce depaseste 16 biti se aduna la coada:
+    for i in range(len(numbers)):
+        a = numbers[i]
+        checksum = (checksum + a) % max_nr
+        #print(bin(checksum))
 
     # 3. complementarea bitilor sumei
-    checksum = 65535 - checksum
+    checksum = ~(-checksum)
+    #print(bin(checksum))
 
     return checksum
-   
 
 
 def verifica_checksum(octeti):
-    if calculeaza_checksum(octeti) == 65535:
+    if calculeaza_checksum(octeti):
         return True
     return False
 
 
 
 if __name__ == '__main__':
-   compara_endianness(16)
+    compara_endianness(16)
+   # Verif. checksum:
+   # z = struct.pack('!HH',65535, 2)
+   # g = calculeaza_checksum(z)
+   # print(g)
