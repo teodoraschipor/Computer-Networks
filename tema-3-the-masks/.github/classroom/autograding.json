@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "stats",
+      "setup": "",
+      "run": "./git-quick-stats -a > stats.log && cat stats.log",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    }
+  ]
+}
