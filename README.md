@@ -1,2 +1,2 @@
 # Computer Networks
- Homework & Projects
+This repository contains computer networks homework and projects
